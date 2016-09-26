@@ -1,6 +1,11 @@
 # Author: Kavin Subramanyam
 
-# Third party libraries
+# Built-in modules
+from collections import deque, defaultdict
+import re
+import unicodedata
+
+# Third party modules
 from BeautifulSoup import BeautifulSoup
 
 # Personal modules
@@ -15,7 +20,8 @@ def retrieve_successors(document, acceptable_tags):
 	# Retrieve the infobox table
 	parser = BeautifulSoup(document)
 	content = str(parser.find('table', {'class':'infobox vcard'}))
-
+	if content is None:
+		return []
 	# Retrieve the correct table row (<tr>)
 	parser = BeautifulSoup(content)
 	table_rows = parser.findAll('tr')
@@ -30,11 +36,42 @@ def retrieve_successors(document, acceptable_tags):
 			correct_row = row
 			break
 	
+	if correct_row is None:
+		return []
+
 	# Now retrieve all successors from the list
-	successors_list_items = parser.findAll('li')
-	successors = [str(successor.getText()) for successor in successors_list_items]
+	parser = BeautifulSoup(str(correct_row))
+	successors_list_items = parser.findAll('a', {'title': re.compile('.+')})
+	successors = [unicodedata.normalize('NFKD', successor.getText()).encode('ascii', 'ignore') for successor in successors_list_items]
+	print(successors)
 	return successors
-		
-if __name__ == '__main__':
+
+# Args: None
+# Basic test to ensure retrieve_successors is working as intended.
+def simple_test():
 	document = download_person("Isaac Newton")
 	successors = retrieve_successors(document, physicist_tags)
+	print(successors)
+
+		
+if __name__ == '__main__':
+
+	root = "Max Planck"
+
+	physicists = {}
+
+	queue = deque()
+	queue.append(root)
+
+	while len(queue) > 0:
+		physicist = queue.popleft()
+		
+		document = download_person(physicist)
+		successors = retrieve_successors(document, physicist_tags)
+
+		physicists[physicist] = []
+		for successor in successors:
+			physicists[physicist].append(successor)
+			queue.append(successor)
+
+	print(physicists)

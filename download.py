@@ -3,6 +3,10 @@
 
 # Third party libraries
 import requests
+from requests.packages.urllib3.exceptions import SNIMissingWarning, InsecurePlatformWarning
+
+requests.packages.urllib3.disable_warnings(SNIMissingWarning)
+requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 
 # Args:
 # 	name - Name of the individual. 
